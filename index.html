@@ -1,0 +1,1423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Venom Notes | Admin Controlled Messaging</title>
+    <style>
+        :root {
+            --primary: #ffffff;
+            --secondary: #888888;
+            --accent: #cccccc;
+            --dark: #000000;
+            --darker: #111111;
+            --admin: #ff4444;
+            --glow-primary: 0 0 10px rgba(255, 255, 255, 0.7);
+            --glow-secondary: 0 0 15px rgba(128, 128, 128, 0.5);
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background-color: var(--dark);
+            color: white;
+            font-family: 'Orbitron', 'Arial Narrow', sans-serif;
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+        
+        /* Admin Panel */
+        #admin-panel {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            z-index: 1000;
+        }
+        
+        #admin-toggle {
+            background: var(--admin);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 5px;
+            font-family: inherit;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+        
+        #admin-toggle:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 10px var(--admin);
+        }
+        
+        #admin-controls {
+            position: absolute;
+            top: 40px;
+            right: 0;
+            background: rgba(20, 20, 20, 0.95);
+            border: 1px solid var(--admin);
+            border-radius: 5px;
+            padding: 1rem;
+            width: 300px;
+            display: none;
+            box-shadow: 0 0 20px rgba(255, 0, 0, 0.3);
+        }
+        
+        .admin-section {
+            margin-bottom: 1rem;
+        }
+        
+        .admin-section h3 {
+            color: var(--admin);
+            margin-bottom: 0.5rem;
+            font-size: 1rem;
+        }
+        
+        .admin-btn {
+            background: rgba(255, 68, 68, 0.2);
+            border: 1px solid var(--admin);
+            color: white;
+            padding: 0.5rem;
+            border-radius: 3px;
+            cursor: pointer;
+            width: 100%;
+            margin-bottom: 0.5rem;
+            transition: all 0.3s ease;
+            font-family: inherit;
+        }
+        
+        .admin-btn:hover {
+            background: rgba(255, 68, 68, 0.4);
+        }
+        
+        .admin-input {
+            width: 100%;
+            padding: 0.5rem;
+            background: rgba(10, 10, 10, 0.8);
+            border: 1px solid #444444;
+            border-radius: 3px;
+            color: white;
+            font-family: inherit;
+            margin-bottom: 0.5rem;
+        }
+        
+        /* Venom body animation container */
+        #venom-container {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 300px;
+            height: 300px;
+            z-index: -1;
+            opacity: 0.8;
+        }
+        
+        /* Venom body base */
+        #venom-body {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, #333333 0%, var(--dark) 70%);
+            border-radius: 45% 55% 60% 40% / 40% 50% 50% 60%;
+            filter: blur(1px);
+            animation: pulse 8s infinite alternate;
+            box-shadow: 
+                inset 0 0 50px rgba(255, 255, 255, 0.2),
+                0 0 60px rgba(100, 100, 100, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        /* Venom tentacles */
+        .tentacle {
+            position: absolute;
+            background: linear-gradient(to right, #222222, #444444);
+            border-radius: 50%;
+            filter: blur(2px);
+            opacity: 0.6;
+            animation: tentacleMove 15s infinite alternate;
+            transition: all 0.5s ease;
+        }
+        
+        /* Aggressive tentacle animation */
+        .tentacle-aggressive {
+            animation: aggressiveTentacle 5s forwards !important;
+            opacity: 0.9 !important;
+            background: linear-gradient(to right, #222222, #000000) !important;
+            filter: blur(1px) !important;
+            z-index: 5 !important;
+        }
+        
+        /* Liquid black tentacles */
+        .tentacle-liquid {
+            position: absolute;
+            background: linear-gradient(to right, #000000, #111111);
+            border-radius: 50%;
+            filter: blur(3px);
+            opacity: 0.7;
+            animation: liquidTentacle 8s infinite alternate;
+        }
+        
+        /* Connection animation */
+        .connection-active {
+            animation: connectionPulse 2s infinite alternate !important;
+            box-shadow: 
+                0 0 30px rgba(255, 255, 255, 0.3),
+                inset 0 0 20px rgba(255, 255, 255, 0.1) !important;
+        }
+        
+        /* Header styles */
+        header {
+            text-align: center;
+            padding: 2rem 1rem;
+            position: relative;
+            z-index: 10;
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            text-shadow: 0 0 5px rgba(255, 255, 255, 0.7);
+            letter-spacing: 2px;
+            color: white;
+        }
+        
+        .tagline {
+            font-size: 1rem;
+            color: #cccccc;
+            text-shadow: 0 0 3px rgba(255, 255, 255, 0.5);
+            letter-spacing: 1px;
+        }
+        
+        /* Role selection */
+        .role-selection {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+        
+        .role-btn {
+            background: rgba(20, 20, 20, 0.8);
+            border: 1px solid #444444;
+            color: #cccccc;
+            padding: 0.8rem 1.5rem;
+            border-radius: 5px;
+            font-family: inherit;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .role-btn.active {
+            background: linear-gradient(to right, #444444, #888888);
+            color: white;
+            border-color: #aaaaaa;
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
+        }
+        
+        .role-btn:hover {
+            border-color: #aaaaaa;
+            transform: translateY(-2px);
+        }
+        
+        /* Main content */
+        main {
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 1rem;
+            position: relative;
+            z-index: 10;
+        }
+        
+        .section {
+            background: rgba(20, 20, 20, 0.9);
+            border: 1px solid #444444;
+            border-radius: 10px;
+            padding: 1.5rem;
+            box-shadow: 
+                0 0 15px rgba(255, 255, 255, 0.1),
+                inset 0 0 10px rgba(255, 255, 255, 0.05);
+            transition: all 0.3s ease;
+        }
+        
+        .section:hover {
+            box-shadow: 
+                0 0 20px rgba(255, 255, 255, 0.15),
+                inset 0 0 15px rgba(255, 255, 255, 0.08);
+            border-color: #666666;
+        }
+        
+        h2 {
+            color: white;
+            margin-bottom: 1rem;
+            text-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+            font-size: 1.5rem;
+        }
+        
+        /* Form elements */
+        .input-group {
+            margin-bottom: 1rem;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #cccccc;
+            font-size: 0.9rem;
+        }
+        
+        input, textarea {
+            width: 100%;
+            padding: 0.8rem;
+            background: rgba(10, 10, 10, 0.8);
+            border: 1px solid #444444;
+            border-radius: 5px;
+            color: white;
+            font-family: inherit;
+            transition: all 0.3s ease;
+        }
+        
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: #aaaaaa;
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
+        }
+        
+        textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+        
+        /* File upload */
+        .file-upload {
+            margin-top: 1rem;
+            padding: 1rem;
+            border: 1px dashed #555555;
+            border-radius: 5px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .file-upload:hover {
+            border-color: #888888;
+            background: rgba(255, 255, 255, 0.05);
+        }
+        
+        .file-upload input {
+            display: none;
+        }
+        
+        .file-label {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+            cursor: pointer;
+            color: #cccccc;
+        }
+        
+        .file-preview {
+            max-width: 100%;
+            max-height: 200px;
+            margin-top: 1rem;
+            display: none;
+            border-radius: 5px;
+            border: 1px solid #666666;
+        }
+        
+        /* Buttons */
+        .btn {
+            background: linear-gradient(to right, #444444, #888888);
+            color: white;
+            border: none;
+            padding: 0.8rem 1.5rem;
+            border-radius: 5px;
+            font-family: inherit;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
+            background: linear-gradient(to right, #555555, #999999);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        .btn::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            transition: 0.5s;
+        }
+        
+        .btn:hover::after {
+            left: 100%;
+        }
+        
+        /* Notes display */
+        .notes-container {
+            margin-top: 1rem;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .note {
+            background: rgba(15, 15, 15, 0.9);
+            border: 1px solid #444444;
+            border-radius: 5px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+        
+        .note:hover {
+            border-color: #666666;
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
+        }
+        
+        .note-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+            color: #cccccc;
+        }
+        
+        .note-sender {
+            font-weight: bold;
+            color: white;
+        }
+        
+        .note-content {
+            color: #dddddd;
+            line-height: 1.4;
+            margin-bottom: 0.5rem;
+        }
+        
+        .note-image {
+            max-width: 100%;
+            max-height: 200px;
+            border-radius: 5px;
+            margin-top: 0.5rem;
+            border: 1px solid #555555;
+        }
+        
+        .note-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+        
+        .action-btn {
+            background: transparent;
+            border: 1px solid #555555;
+            color: #cccccc;
+            padding: 0.3rem 0.8rem;
+            border-radius: 3px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .action-btn:hover {
+            background: #444444;
+            color: white;
+        }
+        
+        /* Connection code display */
+        .connection-code {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: rgba(10, 10, 10, 0.8);
+            border: 1px solid #666666;
+            border-radius: 5px;
+            text-align: center;
+        }
+        
+        .code-display {
+            font-size: 1.5rem;
+            font-weight: bold;
+            letter-spacing: 2px;
+            color: white;
+            margin: 0.5rem 0;
+            text-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+        }
+        
+        .code-info {
+            font-size: 0.8rem;
+            color: #aaaaaa;
+            margin-top: 0.5rem;
+        }
+        
+        /* Status indicator */
+        .status-indicator {
+            margin-top: 1rem;
+            padding: 0.8rem;
+            border-radius: 5px;
+            text-align: center;
+            font-weight: bold;
+            display: none;
+        }
+        
+        .status-connected {
+            background: rgba(0, 100, 0, 0.3);
+            border: 1px solid #006400;
+            color: #90ee90;
+        }
+        
+        .status-error {
+            background: rgba(100, 0, 0, 0.3);
+            border: 1px solid #640000;
+            color: #ff6b6b;
+        }
+        
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 2rem 1rem;
+            margin-top: 2rem;
+            color: #cccccc;
+            font-size: 0.9rem;
+            position: relative;
+            z-index: 10;
+        }
+        
+        .creator {
+            margin-top: 0.5rem;
+            font-style: italic;
+            text-shadow: 0 0 3px rgba(255, 255, 255, 0.5);
+        }
+        
+        /* Admin Stats */
+        .admin-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+        
+        .stat-item {
+            background: rgba(10, 10, 10, 0.8);
+            padding: 0.5rem;
+            border-radius: 3px;
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-weight: bold;
+            color: var(--admin);
+        }
+        
+        /* Animations */
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+                border-radius: 45% 55% 60% 40% / 40% 50% 50% 60%;
+            }
+            50% {
+                transform: scale(1.05);
+                border-radius: 50% 50% 60% 40% / 40% 40% 60% 60%;
+            }
+            100% {
+                transform: scale(1);
+                border-radius: 55% 45% 40% 60% / 60% 50% 50% 40%;
+            }
+        }
+        
+        @keyframes tentacleMove {
+            0% {
+                transform: translate(0, 0) rotate(0deg);
+            }
+            25% {
+                transform: translate(10px, -10px) rotate(5deg);
+            }
+            50% {
+                transform: translate(-5px, 15px) rotate(-3deg);
+            }
+            75% {
+                transform: translate(15px, 5px) rotate(2deg);
+            }
+            100% {
+                transform: translate(-10px, -5px) rotate(-5deg);
+            }
+        }
+        
+        @keyframes aggressiveTentacle {
+            0% {
+                transform: translate(0, 0) rotate(0deg);
+                opacity: 0.9;
+            }
+            10% {
+                transform: translate(40px, -30px) rotate(20deg);
+            }
+            20% {
+                transform: translate(-30px, 40px) rotate(-15deg);
+            }
+            30% {
+                transform: translate(35px, 35px) rotate(18deg);
+            }
+            40% {
+                transform: translate(-35px, -25px) rotate(-12deg);
+            }
+            50% {
+                transform: translate(25px, -40px) rotate(22deg);
+            }
+            60% {
+                transform: translate(-25px, 35px) rotate(-18deg);
+            }
+            70% {
+                transform: translate(30px, 30px) rotate(15deg);
+            }
+            80% {
+                transform: translate(-40px, -20px) rotate(-20deg);
+            }
+            90% {
+                transform: translate(20px, -35px) rotate(25deg);
+            }
+            100% {
+                transform: translate(0, 0) rotate(0deg);
+                opacity: 0.6;
+            }
+        }
+        
+        @keyframes liquidTentacle {
+            0% {
+                transform: translate(0, 0) scale(1);
+                opacity: 0.7;
+            }
+            25% {
+                transform: translate(15px, -15px) scale(1.1);
+                opacity: 0.8;
+            }
+            50% {
+                transform: translate(-10px, 20px) scale(0.9);
+                opacity: 0.6;
+            }
+            75% {
+                transform: translate(20px, 10px) scale(1.05);
+                opacity: 0.75;
+            }
+            100% {
+                transform: translate(-15px, -10px) scale(1);
+                opacity: 0.7;
+            }
+        }
+        
+        @keyframes connectionPulse {
+            0% {
+                box-shadow: 
+                    0 0 15px rgba(255, 255, 255, 0.1),
+                    inset 0 0 10px rgba(255, 255, 255, 0.05);
+            }
+            100% {
+                box-shadow: 
+                    0 0 30px rgba(255, 255, 255, 0.3),
+                    inset 0 0 20px rgba(255, 255, 255, 0.1);
+            }
+        }
+        
+        @keyframes absorbNote {
+            0% {
+                transform: scale(1) translate(var(--startX), var(--startY));
+                opacity: 1;
+            }
+            100% {
+                transform: scale(0) translate(0, 0);
+                opacity: 0;
+            }
+        }
+        
+        @keyframes emitNote {
+            0% {
+                transform: scale(0) translate(0, 0);
+                opacity: 0;
+            }
+            100% {
+                transform: scale(1) translate(var(--endX), var(--endY));
+                opacity: 1;
+            }
+        }
+        
+        /* Responsive design */
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2rem;
+            }
+            
+            #venom-container {
+                width: 200px;
+                height: 200px;
+            }
+            
+            main {
+                padding: 0.5rem;
+            }
+            
+            .role-selection {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .role-btn {
+                width: 80%;
+            }
+            
+            #admin-controls {
+                width: 250px;
+                right: -10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Admin Panel -->
+    <div id="admin-panel">
+        <button id="admin-toggle">ADMIN</button>
+        <div id="admin-controls">
+            <div class="admin-section">
+                <h3>SYSTEM CONTROLS</h3>
+                <button class="admin-btn" id="view-all-notes">View All Notes</button>
+                <button class="admin-btn" id="clear-all-notes">Clear All Notes</button>
+                <button class="admin-btn" id="export-data">Export Data</button>
+            </div>
+            
+            <div class="admin-section">
+                <h3>NOTE MANAGEMENT</h3>
+                <input type="text" class="admin-input" id="search-code" placeholder="Search by code...">
+                <button class="admin-btn" id="search-note">Search Note</button>
+                <input type="text" class="admin-input" id="delete-code" placeholder="Code to delete...">
+                <button class="admin-btn" id="delete-note">Delete Note</button>
+            </div>
+            
+            <div class="admin-section">
+                <h3>SYSTEM STATS</h3>
+                <div class="admin-stats">
+                    <div class="stat-item">
+                        <div>Active Notes</div>
+                        <div class="stat-value" id="active-notes">0</div>
+                    </div>
+                    <div class="stat-item">
+                        <div>Total Sent</div>
+                        <div class="stat-value" id="total-sent">0</div>
+                    </div>
+                    <div class="stat-item">
+                        <div>Today's Notes</div>
+                        <div class="stat-value" id="today-notes">0</div>
+                    </div>
+                    <div class="stat-item">
+                        <div>Failed Attempts</div>
+                        <div class="stat-value" id="failed-attempts">0</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="admin-section">
+                <h3>SYSTEM MESSAGE</h3>
+                <input type="text" class="admin-input" id="system-message" placeholder="System message...">
+                <button class="admin-btn" id="set-message">Set Message</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Venom body animation -->
+    <div id="venom-container">
+        <div id="venom-body"></div>
+    </div>
+    
+    <!-- Header -->
+    <header>
+        <h1>VENOM NOTES</h1>
+        <p class="tagline" id="system-tagline">Connect through the symbiote network</p>
+        
+        <!-- Role selection -->
+        <div class="role-selection">
+            <button id="sender-btn" class="role-btn active">Sender</button>
+            <button id="receiver-btn" class="role-btn">Receiver</button>
+        </div>
+    </header>
+    
+    <!-- Main content -->
+    <main>
+        <!-- Send Notes Section -->
+        <section id="sender-section" class="section">
+            <h2>SEND A NOTE</h2>
+            <div class="input-group">
+                <label for="sender-name">Your Name</label>
+                <input type="text" id="sender-name" placeholder="Enter your name...">
+            </div>
+            <div class="input-group">
+                <label for="note">Your Message</label>
+                <textarea id="note" placeholder="Write your message here..."></textarea>
+            </div>
+            
+            <!-- File upload section -->
+            <div class="file-upload">
+                <label class="file-label">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M14 2H6C4.9 2 4.01 2.9 4.01 4L4 20C4 21.1 4.89 22 5.99 22H18C19.1 22 20 21.1 20 20V8L14 2Z" stroke="#cccccc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M14 2V8H20" stroke="#cccccc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M16 13H8" stroke="#cccccc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M16 17H8" stroke="#cccccc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M10 9H8" stroke="#cccccc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    <span>Upload Image (Optional)</span>
+                    <input type="file" id="image-upload" accept="image/*">
+                </label>
+                <img id="image-preview" class="file-preview" alt="Image preview">
+            </div>
+            
+            <button id="send-btn" class="btn">GENERATE CONNECTION CODE</button>
+            
+            <!-- Connection code display -->
+            <div id="connection-code" class="connection-code" style="display: none;">
+                <p>Share this code with the recipient:</p>
+                <div id="code-display" class="code-display"></div>
+                <p class="code-info">The recipient can use this code to retrieve your note</p>
+            </div>
+            
+            <!-- Status indicator -->
+            <div id="sender-status" class="status-indicator"></div>
+        </section>
+        
+        <!-- Receive Notes Section -->
+        <section id="receiver-section" class="section" style="display: none;">
+            <h2>RECEIVE NOTES</h2>
+            <div class="input-group">
+                <label for="connection-code-input">Connection Code</label>
+                <input type="text" id="connection-code-input" placeholder="Enter connection code...">
+            </div>
+            <button id="receive-btn" class="btn">RETRIEVE NOTE</button>
+            
+            <!-- Status indicator -->
+            <div id="receiver-status" class="status-indicator"></div>
+            
+            <div id="notes-container" class="notes-container">
+                <!-- Notes will appear here -->
+            </div>
+        </section>
+    </main>
+    
+    <!-- Footer -->
+    <footer>
+        <p>Venom Notes - Secure Message Delivery System</p>
+        <p class="creator">THE FATHER OF THIS WEBSITE IS OUR GOD PRATEEK ACHARYA</p>
+    </footer>
+    
+    <script>
+        // DOM elements
+        const venomContainer = document.getElementById('venom-container');
+        const adminToggle = document.getElementById('admin-toggle');
+        const adminControls = document.getElementById('admin-controls');
+        const senderBtn = document.getElementById('sender-btn');
+        const receiverBtn = document.getElementById('receiver-btn');
+        const senderSection = document.getElementById('sender-section');
+        const receiverSection = document.getElementById('receiver-section');
+        const sendBtn = document.getElementById('send-btn');
+        const receiveBtn = document.getElementById('receive-btn');
+        const notesContainer = document.getElementById('notes-container');
+        const imageUpload = document.getElementById('image-upload');
+        const imagePreview = document.getElementById('image-preview');
+        const connectionCodeDiv = document.getElementById('connection-code');
+        const codeDisplay = document.getElementById('code-display');
+        const connectionCodeInput = document.getElementById('connection-code-input');
+        const senderStatus = document.getElementById('sender-status');
+        const receiverStatus = document.getElementById('receiver-status');
+        const systemTagline = document.getElementById('system-tagline');
+        
+        // Admin elements
+        const viewAllNotesBtn = document.getElementById('view-all-notes');
+        const clearAllNotesBtn = document.getElementById('clear-all-notes');
+        const exportDataBtn = document.getElementById('export-data');
+        const searchCodeInput = document.getElementById('search-code');
+        const searchNoteBtn = document.getElementById('search-note');
+        const deleteCodeInput = document.getElementById('delete-code');
+        const deleteNoteBtn = document.getElementById('delete-note');
+        const activeNotesSpan = document.getElementById('active-notes');
+        const totalSentSpan = document.getElementById('total-sent');
+        const todayNotesSpan = document.getElementById('today-notes');
+        const failedAttemptsSpan = document.getElementById('failed-attempts');
+        const systemMessageInput = document.getElementById('system-message');
+        const setMessageBtn = document.getElementById('set-message');
+        
+        // Global variables
+        let failedAttempts = parseInt(localStorage.getItem('failedAttempts')) || 0;
+        let totalNotesSent = parseInt(localStorage.getItem('totalNotesSent')) || 0;
+        
+        // Initialize admin stats
+        function updateAdminStats() {
+            // Count active notes
+            let activeNotes = 0;
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && key.length === 6 && !isNaN(key)) {
+                    activeNotes++;
+                }
+            }
+            activeNotesSpan.textContent = activeNotes;
+            
+            // Update total sent
+            totalSentSpan.textContent = totalNotesSent;
+            
+            // Count today's notes
+            const today = new Date().toDateString();
+            let todayNotes = 0;
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && key.length === 6 && !isNaN(key)) {
+                    const note = JSON.parse(localStorage.getItem(key));
+                    if (note && new Date(note.timestamp).toDateString() === today) {
+                        todayNotes++;
+                    }
+                }
+            }
+            todayNotesSpan.textContent = todayNotes;
+            
+            // Update failed attempts
+            failedAttemptsSpan.textContent = failedAttempts;
+        }
+        
+        // Create tentacles for the venom body
+        function createTentacles() {
+            const tentacleCount = 12;
+            for (let i = 0; i < tentacleCount; i++) {
+                const tentacle = document.createElement('div');
+                tentacle.classList.add('tentacle');
+                
+                // Random size and position
+                const size = Math.random() * 50 + 30;
+                const left = Math.random() * 100;
+                const top = Math.random() * 100;
+                const delay = Math.random() * 10;
+                
+                tentacle.style.width = `${size}px`;
+                tentacle.style.height = `${size / 4}px`;
+                tentacle.style.left = `${left}%`;
+                tentacle.style.top = `${top}%`;
+                tentacle.style.animationDelay = `${delay}s`;
+                
+                venomContainer.appendChild(tentacle);
+            }
+            
+            // Create liquid black tentacles
+            const liquidTentacleCount = 6;
+            for (let i = 0; i < liquidTentacleCount; i++) {
+                const tentacle = document.createElement('div');
+                tentacle.classList.add('tentacle-liquid');
+                
+                // Random size and position
+                const size = Math.random() * 60 + 40;
+                const left = Math.random() * 100;
+                const top = Math.random() * 100;
+                const delay = Math.random() * 8;
+                
+                tentacle.style.width = `${size}px`;
+                tentacle.style.height = `${size / 5}px`;
+                tentacle.style.left = `${left}%`;
+                tentacle.style.top = `${top}%`;
+                tentacle.style.animationDelay = `${delay}s`;
+                
+                venomContainer.appendChild(tentacle);
+            }
+        }
+        
+        // Generate a random connection code
+        function generateConnectionCode() {
+            // Generate a 6-digit code
+            return Math.floor(100000 + Math.random() * 900000).toString();
+        }
+        
+        // Toggle admin panel
+        adminToggle.addEventListener('click', () => {
+            adminControls.style.display = adminControls.style.display === 'block' ? 'none' : 'block';
+        });
+        
+        // Handle role selection
+        senderBtn.addEventListener('click', () => {
+            senderBtn.classList.add('active');
+            receiverBtn.classList.remove('active');
+            senderSection.style.display = 'block';
+            receiverSection.style.display = 'none';
+            senderStatus.style.display = 'none';
+        });
+        
+        receiverBtn.addEventListener('click', () => {
+            receiverBtn.classList.add('active');
+            senderBtn.classList.remove('active');
+            receiverSection.style.display = 'block';
+            senderSection.style.display = 'none';
+            receiverStatus.style.display = 'none';
+        });
+        
+        // Handle image upload preview
+        imageUpload.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    imagePreview.src = event.target.result;
+                    imagePreview.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            } else {
+                imagePreview.style.display = 'none';
+            }
+        });
+        
+        // Send note function
+        function sendNote() {
+            const senderName = document.getElementById('sender-name').value.trim();
+            const note = document.getElementById('note').value.trim();
+            const imageData = imagePreview.style.display === 'block' ? imagePreview.src : null;
+            
+            if (!senderName || !note) {
+                showStatus(senderStatus, 'Please enter your name and note!', 'error');
+                return;
+            }
+            
+            // Generate a unique connection code
+            let connectionCode = generateConnectionCode();
+            
+            // Make sure the code is unique
+            while (localStorage.getItem(connectionCode)) {
+                connectionCode = generateConnectionCode();
+            }
+            
+            // Create note object
+            const noteData = {
+                sender: senderName,
+                content: note,
+                image: imageData,
+                timestamp: new Date().toLocaleString()
+            };
+            
+            // Store note with connection code as key
+            localStorage.setItem(connectionCode, JSON.stringify(noteData));
+            
+            // Update stats
+            totalNotesSent++;
+            localStorage.setItem('totalNotesSent', totalNotesSent);
+            updateAdminStats();
+            
+            // Display the connection code
+            codeDisplay.textContent = connectionCode;
+            connectionCodeDiv.style.display = 'block';
+            
+            // Add connection animation
+            senderSection.classList.add('connection-active');
+            
+            // Visual effect - note flowing into venom body
+            animateNoteAbsorption();
+            
+            // Clear input fields (but keep sender name for convenience)
+            document.getElementById('note').value = '';
+            imageUpload.value = '';
+            imagePreview.style.display = 'none';
+            
+            // Show success status
+            showStatus(senderStatus, 'Connection code generated successfully! Share it with the recipient.', 'connected');
+            
+            // Play subtle sound effect (if supported)
+            playSoundEffect('send');
+        }
+        
+        // Receive notes function
+        function receiveNotes() {
+            const connectionCode = connectionCodeInput.value.trim();
+            
+            if (!connectionCode) {
+                showStatus(receiverStatus, 'Please enter a connection code!', 'error');
+                return;
+            }
+            
+            // Clear previous notes
+            notesContainer.innerHTML = '';
+            
+            // Retrieve note using connection code
+            const noteData = JSON.parse(localStorage.getItem(connectionCode));
+            
+            if (!noteData) {
+                showStatus(receiverStatus, 'No note found with this connection code!', 'error');
+                
+                // Update failed attempts
+                failedAttempts++;
+                localStorage.setItem('failedAttempts', failedAttempts);
+                updateAdminStats();
+                
+                // Trigger aggressive tentacle animation
+                triggerAggressiveTentacles();
+                return;
+            }
+            
+            // Add connection animation
+            receiverSection.classList.add('connection-active');
+            
+            // Display the note
+            displayNote(noteData);
+            
+            // Remove the note from storage after retrieving (one-time use)
+            localStorage.removeItem(connectionCode);
+            updateAdminStats();
+            
+            // Clear the connection code input
+            connectionCodeInput.value = '';
+            
+            // Show success status
+            showStatus(receiverStatus, 'Note retrieved successfully! Connection established.', 'connected');
+            
+            // Play subtle sound effect (if supported)
+            playSoundEffect('receive');
+            
+            // Remove connection animation after 3 seconds
+            setTimeout(() => {
+                receiverSection.classList.remove('connection-active');
+            }, 3000);
+        }
+        
+        // Display a single note
+        function displayNote(note) {
+            const noteElement = document.createElement('div');
+            noteElement.classList.add('note');
+            noteElement.style.opacity = '0';
+            noteElement.style.transform = 'scale(0.8)';
+            
+            let imageHtml = '';
+            if (note.image) {
+                imageHtml = `<img src="${note.image}" class="note-image" alt="Note image">`;
+            }
+            
+            noteElement.innerHTML = `
+                <div class="note-header">
+                    <span class="note-sender">From: ${note.sender}</span>
+                    <span>${note.timestamp}</span>
+                </div>
+                <div class="note-content">${note.content}</div>
+                ${imageHtml}
+            `;
+            
+            notesContainer.appendChild(noteElement);
+            
+            // Animate note appearance
+            setTimeout(() => {
+                noteElement.style.transition = 'all 0.5s ease';
+                noteElement.style.opacity = '1';
+                noteElement.style.transform = 'scale(1)';
+            }, 10);
+        }
+        
+        // Show status message
+        function showStatus(element, message, type) {
+            element.textContent = message;
+            element.className = 'status-indicator';
+            element.classList.add(`status-${type}`);
+            element.style.display = 'block';
+            
+            // Auto-hide after 5 seconds
+            setTimeout(() => {
+                element.style.display = 'none';
+            }, 5000);
+        }
+        
+        // Trigger aggressive tentacle animation when no notes are found
+        function triggerAggressiveTentacles() {
+            const tentacles = document.querySelectorAll('.tentacle');
+            const liquidTentacles = document.querySelectorAll('.tentacle-liquid');
+            
+            tentacles.forEach(tentacle => {
+                tentacle.classList.add('tentacle-aggressive');
+            });
+            
+            liquidTentacles.forEach(tentacle => {
+                tentacle.style.animation = 'aggressiveTentacle 5s forwards';
+                tentacle.style.opacity = '0.9';
+            });
+            
+            // Reset after 5 seconds
+            setTimeout(() => {
+                tentacles.forEach(tentacle => {
+                    tentacle.classList.remove('tentacle-aggressive');
+                });
+                
+                liquidTentacles.forEach(tentacle => {
+                    tentacle.style.animation = 'liquidTentacle 8s infinite alternate';
+                    tentacle.style.opacity = '0.7';
+                });
+            }, 5000);
+        }
+        
+        // Animate note absorption into venom body
+        function animateNoteAbsorption() {
+            const noteElement = document.createElement('div');
+            noteElement.classList.add('note');
+            noteElement.style.position = 'fixed';
+            noteElement.style.width = '200px';
+            noteElement.style.height = '100px';
+            noteElement.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
+            noteElement.style.border = '1px solid #aaaaaa';
+            noteElement.style.borderRadius = '5px';
+            noteElement.style.boxShadow = '0 0 15px rgba(255, 255, 255, 0.2)';
+            noteElement.style.zIndex = '1000';
+            noteElement.style.pointerEvents = 'none';
+            
+            // Position at the input area
+            const inputArea = document.querySelector('textarea');
+            const inputRect = inputArea.getBoundingClientRect();
+            noteElement.style.left = `${inputRect.left + window.scrollX}px`;
+            noteElement.style.top = `${inputRect.top + window.scrollY}px`;
+            
+            document.body.appendChild(noteElement);
+            
+            // Calculate animation path to venom body
+            const venomRect = venomContainer.getBoundingClientRect();
+            const venomCenterX = venomRect.left + venomRect.width / 2;
+            const venomCenterY = venomRect.top + venomRect.height / 2;
+            
+            const startX = inputRect.left + inputRect.width / 2;
+            const startY = inputRect.top + inputRect.height / 2;
+            
+            const deltaX = venomCenterX - startX;
+            const deltaY = venomCenterY - startY;
+            
+            // Set CSS custom properties for animation
+            noteElement.style.setProperty('--startX', `${deltaX}px`);
+            noteElement.style.setProperty('--startY', `${deltaY}px`);
+            
+            // Apply animation
+            noteElement.style.animation = `absorbNote 1s forwards`;
+            
+            // Remove element after animation
+            setTimeout(() => {
+                document.body.removeChild(noteElement);
+                senderSection.classList.remove('connection-active');
+            }, 1000);
+        }
+        
+        // Admin functions
+        viewAllNotesBtn.addEventListener('click', () => {
+            let allNotes = '';
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && key.length === 6 && !isNaN(key)) {
+                    const note = JSON.parse(localStorage.getItem(key));
+                    allNotes += `Code: ${key}\nSender: ${note.sender}\nTime: ${note.timestamp}\nContent: ${note.content}\n\n`;
+                }
+            }
+            
+            if (allNotes) {
+                alert(`ALL NOTES:\n\n${allNotes}`);
+            } else {
+                alert('No notes found in the system.');
+            }
+        });
+        
+        clearAllNotesBtn.addEventListener('click', () => {
+            if (confirm('Are you sure you want to delete ALL notes? This cannot be undone.')) {
+                const keysToRemove = [];
+                for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    if (key && key.length === 6 && !isNaN(key)) {
+                        keysToRemove.push(key);
+                    }
+                }
+                
+                keysToRemove.forEach(key => {
+                    localStorage.removeItem(key);
+                });
+                
+                alert(`Deleted ${keysToRemove.length} notes.`);
+                updateAdminStats();
+            }
+        });
+        
+        exportDataBtn.addEventListener('click', () => {
+            const data = {};
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                data[key] = localStorage.getItem(key);
+            }
+            
+            const dataStr = JSON.stringify(data, null, 2);
+            const dataBlob = new Blob([dataStr], {type: 'application/json'});
+            
+            const url = URL.createObjectURL(dataBlob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'venom-notes-backup.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            alert('Data exported successfully!');
+        });
+        
+        searchNoteBtn.addEventListener('click', () => {
+            const code = searchCodeInput.value.trim();
+            if (!code) {
+                alert('Please enter a code to search.');
+                return;
+            }
+            
+            const note = JSON.parse(localStorage.getItem(code));
+            if (note) {
+                alert(`NOTE FOUND:\n\nCode: ${code}\nSender: ${note.sender}\nTime: ${note.timestamp}\nContent: ${note.content}`);
+            } else {
+                alert('No note found with that code.');
+            }
+        });
+        
+        deleteNoteBtn.addEventListener('click', () => {
+            const code = deleteCodeInput.value.trim();
+            if (!code) {
+                alert('Please enter a code to delete.');
+                return;
+            }
+            
+            if (localStorage.getItem(code)) {
+                localStorage.removeItem(code);
+                alert(`Note with code ${code} has been deleted.`);
+                updateAdminStats();
+            } else {
+                alert('No note found with that code.');
+            }
+        });
+        
+        setMessageBtn.addEventListener('click', () => {
+            const message = systemMessageInput.value.trim();
+            if (message) {
+                systemTagline.textContent = message;
+                localStorage.setItem('systemMessage', message);
+                alert('System message updated!');
+            } else {
+                alert('Please enter a message.');
+            }
+        });
+        
+        // Play subtle sound effects
+        function playSoundEffect(type) {
+            // Create audio context (if supported)
+            if (window.AudioContext || window.webkitAudioContext) {
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                
+                if (type === 'send') {
+                    // Create a descending sound for sending
+                    const oscillator = audioContext.createOscillator();
+                    const gainNode = audioContext.createGain();
+                    
+                    oscillator.connect(gainNode);
+                    gainNode.connect(audioContext.destination);
+                    
+                    oscillator.frequency.setValueAtTime(400, audioContext.currentTime);
+                    oscillator.frequency.exponentialRampToValueAtTime(50, audioContext.currentTime + 0.5);
+                    
+                    gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+                    
+                    oscillator.start();
+                    oscillator.stop(audioContext.currentTime + 0.5);
+                } else if (type === 'receive') {
+                    // Create an ascending sound for receiving
+                    const oscillator = audioContext.createOscillator();
+                    const gainNode = audioContext.createGain();
+                    
+                    oscillator.connect(gainNode);
+                    gainNode.connect(audioContext.destination);
+                    
+                    oscillator.frequency.setValueAtTime(50, audioContext.currentTime);
+                    oscillator.frequency.exponentialRampToValueAtTime(400, audioContext.currentTime + 0.5);
+                    
+                    gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+                    
+                    oscillator.start();
+                    oscillator.stop(audioContext.currentTime + 0.5);
+                }
+            }
+        }
+        
+        // Initialize the application
+        function init() {
+            createTentacles();
+            
+            // Load system message if exists
+            const savedMessage = localStorage.getItem('systemMessage');
+            if (savedMessage) {
+                systemTagline.textContent = savedMessage;
+                systemMessageInput.value = savedMessage;
+            }
+            
+            // Update admin stats
+            updateAdminStats();
+            
+            // Event listeners
+            sendBtn.addEventListener('click', sendNote);
+            receiveBtn.addEventListener('click', receiveNotes);
+            
+            // Add hover effect to venom body
+            venomContainer.addEventListener('mouseover', () => {
+                venomContainer.style.transform = 'translate(-50%, -50%) scale(1.1)';
+            });
+            
+            venomContainer.addEventListener('mouseout', () => {
+                venomContainer.style.transform = 'translate(-50%, -50%) scale(1)';
+            });
+            
+            // Add mouse move effect for tentacles
+            document.addEventListener('mousemove', (e) => {
+                const tentacles = document.querySelectorAll('.tentacle, .tentacle-liquid');
+                tentacles.forEach(tentacle => {
+                    const rect = venomContainer.getBoundingClientRect();
+                    const venomCenterX = rect.left + rect.width / 2;
+                    const venomCenterY = rect.top + rect.height / 2;
+                    
+                    const deltaX = e.clientX - venomCenterX;
+                    const deltaY = e.clientY - venomCenterY;
+                    const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+                    
+                    // Only react if mouse is near the venom body
+                    if (distance < 300) {
+                        const strength = (300 - distance) / 300;
+                        const moveX = deltaX * strength * 0.1;
+                        const moveY = deltaY * strength * 0.1;
+                        
+                        // Store original transform
+                        if (!tentacle.dataset.originalTransform) {
+                            tentacle.dataset.originalTransform = tentacle.style.transform;
+                        }
+                        
+                        tentacle.style.transform = `${tentacle.dataset.originalTransform} translate(${moveX}px, ${moveY}px)`;
+                    }
+                });
+            });
+        }
+        
+        // Start the application when DOM is loaded
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
